@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campaign Overview</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google API Scripts -->
+    <script
+      src="https://apis.google.com/js/api.js"
+      onload="gapiLoaded()"
+    ></script>
+    <script
+      src="https://accounts.google.com/gsi/client"
+      onload="gisLoaded()"
+    ></script>
+    <script src="auth.js"></script>
+
+    <style>
+      /* Animation for content */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .fade-in {
+        animation: fadeIn 0.5s ease-in-out forwards;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <!-- Alert Box for messages -->
+    <div
+      id="alertBox"
+      class="hidden fixed top-5 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded z-50 shadow-lg"
+      role="alert"
+    >
+      <span id="alertMessage"></span>
+      <button
+        class="ml-4 font-bold"
+        onclick="document.getElementById('alertBox').classList.add('hidden')"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+      <!-- Sidebar -->
+      <div class="w-full md:w-64 bg-blue-800 text-white p-5">
+        <h2 class="text-2xl md:text-3xl font-bold mb-6">Dashboard</h2>
+
+        <nav>
+          <ul class="space-y-2">
+            <li>
+              <a
+                href="overview.html"
+                class="block py-2 px-4 bg-blue-700 rounded transition duration-200 text-lg md:text-xl"
+              >
+                <span class="mr-2"><i class="fas fa-home"></i></span>Overview
+              </a>
+            </li>
+            <li>
+              <a
+                href="dashboard.html"
+                class="block py-2 px-4 hover:bg-blue-700 rounded transition duration-200 text-lg md:text-xl"
+              >
+                <span class="mr-2"><i class="fas fa-chart-bar"></i></span
+                >Dashboard
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                id="signOutLink"
+                class="block py-2 px-4 hover:bg-blue-700 rounded transition duration-200 text-lg md:text-xl"
+              >
+                <span class="mr-2"><i class="fas fa-sign-out-alt"></i></span
+                >Logout
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- User Profile Section -->
+        <div class="mt-auto pt-5 border-t border-blue-700 mt-8">
+          <div class="flex items-center">
+            <div
+              id="userProfilePic"
+              class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold"
+            >
+              <!-- Will be populated with initials -->
+            </div>
+            <div class="ml-3">
+              <p id="userNameDisplay" class="font-medium">User</p>
+              <p id="userEmailDisplay" class="text-sm text-blue-200"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1 p-4 md:p-6">
+        <h1
+          class="text-2xl md:text-3xl font-semibold text-center mb-6 md:mb-8 text-blue-800"
+        >
+          Campaign Overview
+        </h1>
+
+        <!-- Overview Content -->
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6 fade-in">
+          <h2 class="text-xl md:text-2xl font-semibold mb-4 text-blue-600">
+            Campaign Summary
+          </h2>
+          <p class="mb-4 text-gray-700">
+            Welcome to your social media campaign management platform! This
+            overview page provides a high-level summary of your campaign
+            performance and helps you navigate the platform.
+          </p>
+          <p class="mb-4 text-gray-700">
+            For detailed analytics and real-time metrics, please visit the
+            <a href="dashboard.html" class="text-blue-500 hover:underline"
+              >Dashboard</a
+            >
+            page, where you can monitor key performance indicators and track
+            your campaign's progress.
+          </p>
+
+          <!-- Campaign Status Card -->
+          <div
+            class="mt-6 bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500"
+          >
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg
+                  class="h-5 w-5 text-blue-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z"
+                    clip-rule="evenodd"
+                  ></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-lg font-medium text-blue-800">
+                  Campaign Status: <span class="text-green-600">Active</span>
+                </h3>
+                <p class="mt-2 text-sm text-blue-700">
+                  Your campaign is currently active and performing well. Check
+                  the dashboard for the latest metrics.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Tips Section -->
+        <div
+          class="bg-white p-6 rounded-lg shadow-lg mb-6 fade-in"
+          style="animation-delay: 0.1s"
+        >
+          <h2 class="text-xl md:text-2xl font-semibold mb-4 text-blue-600">
+            Quick Tips
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
+              <h3 class="font-semibold text-lg mb-2">Monitor Engagement</h3>
+              <p class="text-gray-600">
+                Regularly check your engagement rates in the dashboard to
+                understand how users are interacting with your content.
+              </p>
+            </div>
+            <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
+              <h3 class="font-semibold text-lg mb-2">Analyze Audience</h3>
+              <p class="text-gray-600">
+                Understanding your audience demographics can help you tailor
+                content to better suit their interests and preferences.
+              </p>
+            </div>
+            <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
+              <h3 class="font-semibold text-lg mb-2">Content Planning</h3>
+              <p class="text-gray-600">
+                Plan your content calendar in advance to maintain a consistent
+                posting schedule across all platforms.
+              </p>
+            </div>
+            <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
+              <h3 class="font-semibold text-lg mb-2">Track Conversions</h3>
+              <p class="text-gray-600">
+                Set up conversion tracking to measure how effectively your
+                social media campaigns are driving desired actions.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Features -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+          <h2 class="text-2xl font-semibold mb-4 text-blue-600">
+            Upcoming Features
+          </h2>
+          <ul class="list-disc pl-5 space-y-2">
+            <li>Campaign scheduling and automation</li>
+            <li>Content performance analysis</li>
+            <li>Audience demographics insights</li>
+            <li>Competitor analysis tools</li>
+            <li>Custom reporting options</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Check if user is logged in
+        const user = localStorage.getItem("user")
+          ? JSON.parse(localStorage.getItem("user"))
+          : null;
+
+        if (!user) {
+          // Redirect to login if no user found
+          window.location.href = "index.html";
+        }
+      });
+    </script>
+  </body>
+</html>

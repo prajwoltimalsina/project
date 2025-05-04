@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Social Media Campaign Dashboard</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <!-- Google API Scripts -->
+    <script
+      src="https://apis.google.com/js/api.js"
+      onload="gapiLoaded()"
+    ></script>
+    <script
+      src="https://accounts.google.com/gsi/client"
+      onload="gisLoaded()"
+    ></script>
+    <script src="auth.js"></script>
+
+    <!-- Add the new campaignData.js script -->
+    <script src="campaignData.js"></script>
+    <script src="script.js"></script>
+
+    <style>
+      /* Animation for metrics counters */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+
+      /* Loading spinner */
+      .loader {
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #3498db;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <script src="script.js"></script>
+
+  <body class="bg-gray-100 min-h-screen">
+    <!-- Alert Box for messages -->
+    <div
+      id="alertBox"
+      class="hidden fixed top-5 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded z-50 shadow-lg"
+      role="alert"
+    >
+      <span id="alertMessage"></span>
+      <button
+        class="ml-4 font-bold"
+        onclick="document.getElementById('alertBox').classList.add('hidden')"
+      >
+        ×
+      </button>
+    </div>
+
+    <!-- Network status indicator -->
+    <div
+      id="networkStatus"
+      class="fixed bottom-5 right-5 px-3 py-1 rounded-full text-white font-medium"
+    ></div>
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+      <!-- Sidebar -->
+      <div class="w-full md:w-64 bg-blue-800 text-white p-5">
+        <h2 class="text-2xl md:text-3xl font-bold mb-6">Dashboard</h2>
+
+        <nav>
+          <ul class="space-y-2">
+            <li>
+              <a
+                href="overview.html"
+                class="block py-2 px-4 hover:bg-blue-700 rounded transition duration-200 text-lg md:text-xl"
+              >
+                <span class="mr-2"><i class="fas fa-home"></i></span>Overview
+              </a>
+            </li>
+            <li>
+              <a
+                href="dashboard.html"
+                class="block py-2 px-4 bg-blue-700 rounded transition duration-200 text-lg md:text-xl"
+              >
+                <span class="mr-2"><i class="fas fa-chart-bar"></i></span
+                >Dashboard
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                id="signOutLink"
+                class="block py-2 px-4 hover:bg-blue-700 rounded transition duration-200 text-lg md:text-xl"
+              >
+                <span class="mr-2"><i class="fas fa-sign-out-alt"></i></span
+                >Logout
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- User Profile Section -->
+        <div class="mt-auto pt-5 border-t border-blue-700 mt-8">
+          <div class="flex items-center">
+            <div
+              id="userProfilePic"
+              class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold"
+            >
+              <!-- Will be populated with initials -->
+            </div>
+            <div class="ml-3">
+              <p id="userNameDisplay" class="font-medium">User</p>
+              <p id="userEmailDisplay" class="text-sm text-blue-200"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1 p-4 md:p-6">
+        <h1
+          class="text-2xl md:text-3xl font-semibold text-center mb-6 md:mb-8 text-blue-800"
+        >
+          Social Media Campaign Dashboard
+        </h1>
+
+        <div id="tabs">
+          <a href="analytics.html?platform=facebook">Facebook</a>
+          <a href="analytics.html?platform=instagram">Instagram</a>
+          <a href="analytics.html?platform=twitter">Twitter</a>
+          <a href="analytics.html?platform=linkedin">LinkedIn</a>
+        </div>
+
+        <!-- Loading state -->
+        <div
+          id="loadingState"
+          class="flex flex-col items-center justify-center h-64"
+        >
+          <div class="loader mb-4"></div>
+          <p class="text-gray-600">Loading campaign data...</p>
+        </div>
+
+        <!-- Dashboard content - hidden until data loads -->
+        <div id="dashboardContent" class="hidden">
+          <!-- Metrics Cards -->
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8"
+          >
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow-lg fade-in">
+              <h5 class="text-lg md:text-xl font-semibold mb-2 text-blue-600">
+                Engagement Rate
+              </h5>
+              <h2 id="engagementRate" class="text-3xl md:text-4xl font-bold">
+                0%
+              </h2>
+              <p class="text-gray-500 text-sm mt-2">
+                Interactions per impression
+              </p>
+            </div>
+            <div
+              class="bg-white p-4 md:p-6 rounded-lg shadow-lg fade-in"
+              style="animation-delay: 0.1s"
+            >
+              <h5 class="text-lg md:text-xl font-semibold mb-2 text-blue-600">
+                Follower Growth
+              </h5>
+              <h2 id="followerGrowth" class="text-3xl md:text-4xl font-bold">
+                0
+              </h2>
+              <p class="text-gray-500 text-sm mt-2">
+                New followers this period
+              </p>
+            </div>
+            <div
+              class="bg-white p-4 md:p-6 rounded-lg shadow-lg fade-in"
+              style="animation-delay: 0.2s"
+            >
+              <h5 class="text-lg md:text-xl font-semibold mb-2 text-blue-600">
+                Total Reach
+              </h5>
+              <h2 id="totalReach" class="text-3xl md:text-4xl font-bold">0</h2>
+              <p class="text-gray-500 text-sm mt-2">Unique users reached</p>
+            </div>
+            <div
+              class="bg-white p-4 md:p-6 rounded-lg shadow-lg fade-in"
+              style="animation-delay: 0.3s"
+            >
+              <h5 class="text-lg md:text-xl font-semibold mb-2 text-blue-600">
+                Impressions
+              </h5>
+              <h2 id="impressions" class="text-3xl md:text-4xl font-bold">0</h2>
+              <p class="text-gray-500 text-sm mt-2">Total content views</p>
+            </div>
+          </div>
+
+          <!-- Table and Chart Container -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Table for displaying CSV data -->
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow-lg">
+              <h3 class="text-xl font-semibold mb-4 text-blue-600">
+                Campaign Data
+              </h3>
+              <div class="overflow-x-auto">
+                <table class="min-w-full table-auto">
+                  <thead>
+                    <tr class="bg-gray-50">
+                      <th class="py-2 px-4 border-b text-left font-semibold">
+                        Metric
+                      </th>
+                      <th class="py-2 px-4 border-b text-left font-semibold">
+                        Value
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody id="campaignTableBody">
+                    <!-- Data rows will be inserted here -->
+                    <tr>
+                      <td colspan="2" class="py-4 text-center text-gray-500">
+                        Loading data...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Chart section for visualizing selected data -->
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow-lg">
+              <h3 class="text-xl font-semibold mb-4 text-blue-600">
+                Performance Metrics
+              </h3>
+              <div class="max-w-full h-64 md:h-80">
+                <canvas id="metricsChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Last Updated Section -->
+          <div class="mt-6 text-right text-sm text-gray-500">
+            <p>Last updated: <span id="lastUpdated">Loading...</span></p>
+            <p id="dataSource" class="text-xs mt-1 text-gray-400"></p>
+          </div>
+        </div>
+
+        <!-- No Data State - shown if no data available -->
+        <div
+          id="noDataState"
+          class="hidden flex flex-col items-center justify-center h-64 bg-white p-6 rounded-lg shadow-lg"
+        >
+          <svg
+            class="w-16 h-16 text-gray-400 mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 14h.01M8 20h8a4 4 0 00.97-7.88 4.5 4.5 0 00-8.94 0A4 4 0 008 20z"
+            ></path>
+          </svg>
+          <h3 class="text-xl font-medium text-gray-900 mb-2">
+            No campaign data available
+          </h3>
+          <p class="text-gray-600 text-center">
+            We couldn't find any campaign data. Try refreshing the page or check
+            back later.
+          </p>
+          <button
+            id="retryButton"
+            class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-200"
+          >
+            Retry Loading Data
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Font Awesome for icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js"></script>
+
+    <script>
+      // Status indicator for online/offline
+      const networkStatus = document.getElementById("networkStatus");
+
+      function updateNetworkStatus() {
+        if (navigator.onLine) {
+          networkStatus.textContent = "Online";
+          networkStatus.classList.add("bg-green-500");
+          networkStatus.classList.remove("bg-red-500");
+        } else {
+          networkStatus.textContent = "Offline";
+          networkStatus.classList.add("bg-red-500");
+          networkStatus.classList.remove("bg-green-500");
+        }
+      }
+
+      // Listen for network status changes
+      window.addEventListener("online", () => {
+        updateNetworkStatus();
+        // Optionally refresh data when coming back online
+        loadCampaignData();
+      });
+
+      window.addEventListener("offline", () => {
+        updateNetworkStatus();
+      });
+
+      document.addEventListener("DOMContentLoaded", async function () {
+        // Initialize network status
+        updateNetworkStatus();
+
+        // Initialize the campaign database
+        try {
+          await initCampaignDB();
+        } catch (error) {
+          console.error("Failed to initialize campaign database:", error);
+        }
+
+        // Check if user is logged in
+        const user = checkAuthStatus();
+
+        if (user) {
+          // Display user information
+          document.getElementById("userNameDisplay").textContent =
+            user.firstName + " " + user.lastName;
+          document.getElementById("userEmailDisplay").textContent = user.email;
+
+          // Set user initials in profile pic
+          const profilePic = document.getElementById("userProfilePic");
+          const initials = (
+            user.firstName.charAt(0) +
+            (user.lastName ? user.lastName.charAt(0) : "")
+          ).toUpperCase();
+          profilePic.textContent = initials;
+        } else {
+          // Safety redirect to login if no user found
+          window.location.href = "index.html";
+          return;
+        }
+
+        // Load data with offline support
+        loadCampaignData();
+
+        // Retry button event listener
+        document
+          .getElementById("retryButton")
+          .addEventListener("click", function () {
+            document.getElementById("noDataState").classList.add("hidden");
+            document.getElementById("loadingState").classList.remove("hidden");
+            loadCampaignData();
+          });
+      });
+
+      // Function to load campaign data with offline support
+      async function loadCampaignData() {
+        // Show loading state
+        document.getElementById("loadingState").classList.remove("hidden");
+        document.getElementById("dashboardContent").classList.add("hidden");
+        document.getElementById("noDataState").classList.add("hidden");
+
+        try {
+          // Use our new function that supports offline mode
+          const data = await fetchCampaignDataWithOfflineSupport();
+
+          if (data && data.length > 0) {
+            // Set data source indicator
+            document.getElementById("dataSource").textContent = navigator.onLine
+              ? "Data from server"
+              : "Data from offline storage";
+
+            // Process the data
+            processCampaignData(data);
+          } else {
+            showNoDataState();
+          }
+        } catch (error) {
+          console.error("Error loading campaign data:", error);
+          showAlert("Error loading campaign data: " + error.message);
+          showNoDataState();
+        }
+      }
+
+      // Show the no data state
+      function showNoDataState() {
+        document.getElementById("loadingState").classList.add("hidden");
+        document.getElementById("dashboardContent").classList.add("hidden");
+        document.getElementById("noDataState").classList.remove("hidden");
+      }
+
+      // Process campaign data regardless of source
+      function processCampaignData(data) {
+        const tableBody = document.getElementById("campaignTableBody");
+        const metrics = {};
+        let engagementRate = 0;
+        let followerGrowth = 0;
+        let totalReach = 0;
+        let impressions = 0;
+
+        // Clear existing table data
+        tableBody.innerHTML = "";
+
+        // Process each row of the data
+        if (Array.isArray(data) && data.length > 0) {
+          data.forEach((row, index) => {
+            if (row.length >= 2) {
+              // Extract and normalize the item name
+              const item = row[0].trim().toLowerCase();
+              // Convert to number if possible, otherwise trim the string
+              const value = parseFloat(row[1]) || row[1].trim();
+
+              // Insert rows into the table
+              const newRow = tableBody.insertRow();
+              const cellItem = newRow.insertCell(0);
+              const cellValue = newRow.insertCell(1);
+
+              // Add classes for styling
+              cellItem.className = "py-2 px-4 border-b";
+              cellValue.className = "py-2 px-4 border-b font-medium";
+
+              cellItem.textContent =
+                item.charAt(0).toUpperCase() + item.slice(1); // Capitalize
+              cellValue.textContent =
+                typeof value === "number" ? value.toLocaleString() : value;
+
+              // Collect metrics for the chart and separate values for count-up
+              if (item === "engagement rate") {
+                engagementRate = parseFloat(value) || 0;
+              } else if (item === "follower growth") {
+                followerGrowth = parseFloat(value) || 0;
+              } else if (item === "total reached" || item === "reach") {
+                totalReach = parseFloat(value) || 0;
+              } else if (item === "impressions") {
+                impressions = parseFloat(value) || 0;
+              }
+
+              // Store for chart
+              if (!isNaN(parseFloat(value))) {
+                metrics[item] = parseFloat(value);
+              }
+            }
+          });
+
+          // Update metrics display
+          document.getElementById(
+            "engagementRate"
+          ).textContent = `${engagementRate}%`;
+          document.getElementById("followerGrowth").textContent =
+            followerGrowth.toLocaleString();
+          document.getElementById("totalReach").textContent =
+            totalReach.toLocaleString();
+          document.getElementById("impressions").textContent =
+            impressions.toLocaleString();
+
+          // Set last updated timestamp
+          document.getElementById("lastUpdated").textContent =
+            new Date().toLocaleString();
+
+          // Draw chart
+          drawChart(metrics);
+
+          // Hide loading, show dashboard
+          document.getElementById("loadingState").classList.add("hidden");
+          document
+            .getElementById("dashboardContent")
+            .classList.remove("hidden");
+        } else {
+          showNoDataState();
+          showAlert(
+            "No campaign data available or invalid data format received."
+          );
+        }
+      }
+
+      // Function to draw a chart using Chart.js
+      function drawChart(metrics) {
+        const ctx = document.getElementById("metricsChart").getContext("2d");
+
+        // Destroy existing chart if it exists
+        if (window.campaignChart) {
+          window.campaignChart.destroy();
+        }
+
+        // Only draw chart if we have data
+        if (Object.keys(metrics).length > 0) {
+          // Filter out very large values that would skew the chart
+          const chartMetrics = { ...metrics };
+          const values = Object.values(chartMetrics);
+          const max = Math.max(...values);
+          const min = Math.min(...values);
+
+          // If we have a huge range, consider using a logarithmic scale
+          const useLogScale = max / min > 1000;
+
+          window.campaignChart = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: Object.keys(chartMetrics).map(
+                (key) => key.charAt(0).toUpperCase() + key.slice(1) // Capitalize labels
+              ),
+              datasets: [
+                {
+                  label: "Campaign Metrics",
+                  data: Object.values(chartMetrics),
+                  backgroundColor: [
+                    "rgba(54, 162, 235, 0.6)",
+                    "rgba(255, 99, 132, 0.6)",
+                    "rgba(75, 192, 192, 0.6)",
+                    "rgba(255, 159, 64, 0.6)",
+                    "rgba(153, 102, 255, 0.6)",
+                  ],
+                  borderColor: [
+                    "rgba(54, 162, 235, 1)",
+                    "rgba(255, 99, 132, 1)",
+                    "rgba(75, 192, 192, 1)",
+                    "rgba(255, 159, 64, 1)",
+                    "rgba(153, 102, 255, 1)",
+                  ],
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  type: useLogScale ? "logarithmic" : "linear",
+                  ticks: {
+                    callback: function (value) {
+                      if (value >= 1000000)
+                        return (value / 1000000).toFixed(1) + "M";
+                      if (value >= 1000) return (value / 1000).toFixed(1) + "K";
+                      return value;
+                    },
+                  },
+                },
+              },
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      let value = context.raw;
+                      if (value >= 1000000)
+                        return (value / 1000000).toFixed(2) + " Million";
+                      if (value >= 1000)
+                        return (value / 1000).toFixed(2) + " Thousand";
+                      return value;
+                    },
+                  },
+                },
+              },
+            },
+          });
+        } else {
+          // Show message if no data
+          ctx.font = "16px Arial";
+          ctx.fillStyle = "#666";
+          ctx.textAlign = "center";
+          ctx.fillText(
+            "No metric data available",
+            ctx.canvas.width / 2,
+            ctx.canvas.height / 2
+          );
+        }
+      }
+
+      // Helper function to display alerts
+      function showAlert(message) {
+        const alertBox = document.getElementById("alertBox");
+        const alertMessage = document.getElementById("alertMessage");
+
+        if (alertBox && alertMessage) {
+          alertMessage.innerText = message;
+          alertBox.classList.remove("hidden");
+
+          setTimeout(() => {
+            alertBox.classList.add("hidden");
+          }, 5000);
+        } else {
+          // Fallback if alert elements don't exist
+          alert(message);
+        }
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

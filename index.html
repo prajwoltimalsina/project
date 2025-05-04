@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register and Login</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- Google API Scripts - Load in correct order -->
+    <script
+      src="https://apis.google.com/js/api.js"
+      onload="gapiLoaded()"
+    ></script>
+    <script
+      src="https://accounts.google.com/gsi/client"
+      onload="gisLoaded()"
+    ></script>
+
+    <!--workboc CDN-->
+    <script src="https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((reg) => console.log("Service Worker registered"))
+            .catch((err) => console.log("SW registration failed: ", err));
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <!-- Alert Box for messages -->
+    <div
+      id="alertBox"
+      style="
+        display: none;
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 15px;
+        border-radius: 5px;
+        z-index: 1000;
+      "
+    >
+      <span id="alertMessage"></span>
+    </div>
+
+    <div class="container" id="signup" style="display: none">
+      <h1 class="from-title">Register</h1>
+      <form id="signupForm">
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input
+            type="text"
+            name="fName"
+            id="fName"
+            placeholder="First Name"
+            required
+          />
+          <label for="fname">First Name</label>
+        </div>
+
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input
+            type="text"
+            name="lName"
+            id="lName"
+            placeholder="Last Name"
+            required
+          />
+          <label for="lName">Last Name</label>
+        </div>
+
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input
+            type="email"
+            name="email"
+            id="signupEmail"
+            placeholder="Email"
+            required
+          />
+          <label for="signupEmail">Email</label>
+        </div>
+
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input
+            type="password"
+            name="password"
+            id="signupPassword"
+            placeholder="Password"
+            required
+          />
+          <label for="signupPassword">Password</label>
+        </div>
+
+        <input type="submit" class="btn" value="Sign Up" />
+      </form>
+      <p class="or">----------or--------</p>
+
+      <div id="googleSignupDiv"></div>
+
+      <div class="links">
+        <p>Already Have Account ?</p>
+        <button
+          id="signInButton"
+          onclick="document.getElementById('signIn').style.display='block'; document.getElementById('signup').style.display='none';"
+        >
+          Sign In
+        </button>
+      </div>
+    </div>
+
+    <div class="container" id="signIn">
+      <h1 class="form-title">Sign In</h1>
+      <form id="signinForm">
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input
+            type="email"
+            name="email"
+            id="signinEmail"
+            placeholder="Email"
+            required
+          />
+          <label for="signinEmail">Email</label>
+        </div>
+
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input
+            type="password"
+            name="password"
+            id="signinPassword"
+            placeholder="Password"
+            required
+          />
+          <label for="signinPassword">Password</label>
+        </div>
+
+        <p class="recover">
+          <a href="#">Recover Password</a>
+        </p>
+        <input type="submit" class="btn" value="Sign In" />
+      </form>
+      <p class="or">----------or--------</p>
+
+      <div id="googleSigninDiv"></div>
+
+      <div class="links">
+        <p>Don't have account yet?</p>
+        <button id="signUpButton">Sign Up</button>
+      </div>
+    </div>
+
+    <!-- Load auth.js after Google API scripts -->
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

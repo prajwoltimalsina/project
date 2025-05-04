@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Platform Analytics</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      h1 {
+        text-transform: capitalize;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      a.back {
+        display: inline-block;
+        margin-bottom: 20px;
+        text-decoration: none;
+        color: #007bff;
+      }
+    </style>
+
+    <style>
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+      }
+
+      .card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        border-left: 4px solid #4f46e5;
+        transition: transform 0.2s;
+      }
+
+      .card:hover {
+        transform: translateY(-4px);
+      }
+
+      .card-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+      }
+
+      .card-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #111827;
+      }
+
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f9fafb;
+      }
+
+      h1,
+      h2 {
+        margin-left: 1rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <a href="dashboard.html" class="back">← Back to Dashboard</a>
+    <h1 id="page-title">Analytics</h1>
+    <div id="data-display">Loading...</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+
+    <script src="script.js"></script>
+
+    <div class="cards-container">
+      <div id="analyticsCards" class="grid"></div>
+    </div>
+  </body>
+</html>
