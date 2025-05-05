@@ -2,36 +2,30 @@
 <html>
   <head>
     <title>Platform Analytics</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-      }
-      h1 {
-        text-transform: capitalize;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-top: 20px;
-      }
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 8px;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-      a.back {
-        display: inline-block;
-        margin-bottom: 20px;
-        text-decoration: none;
-        color: #007bff;
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <!-- Google API Scripts -->
+    <script
+      src="https://apis.google.com/js/api.js"
+      onload="gapiLoaded()"
+    ></script>
+    <script
+      src="https://accounts.google.com/gsi/client"
+      onload="gisLoaded()"
+    ></script>
+    <script src="auth.js"></script>
+    <script src="campaignData.js"></script>
+    <script src="script.js"></script>
 
     <style>
+      /* Original analytics.html styles */
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -65,29 +59,215 @@
         color: #111827;
       }
 
-      body {
-        font-family: "Segoe UI", sans-serif;
-        background: #f9fafb;
+      /* Table styles */
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
       }
-
-      h1,
-      h2 {
-        margin-left: 1rem;
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
       }
     </style>
   </head>
 
-  <body>
-    <a href="dashboard.html" class="back">← Back to Dashboard</a>
-    <h1 id="page-title">Analytics</h1>
-    <div id="data-display">Loading...</div>
-
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-
-    <script src="script.js"></script>
-
-    <div class="cards-container">
-      <div id="analyticsCards" class="grid"></div>
+  <body class="bg-gray-100 min-h-screen">
+    <!-- Alert Box for messages -->
+    <div
+      id="alertBox"
+      class="hidden fixed top-5 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded z-50 shadow-lg"
+      role="alert"
+    >
+      <span id="alertMessage"></span>
+      <button
+        class="ml-4 font-bold"
+        onclick="document.getElementById('alertBox').classList.add('hidden')"
+      >
+        ×
+      </button>
     </div>
+
+    <!-- Network status indicator -->
+    <div
+      id="networkStatus"
+      class="fixed bottom-5 right-5 px-3 py-1 rounded-full text-white font-medium"
+    ></div>
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+      <!-- Sidebar -->
+      <div class="w-full md:w-64 bg-blue-800 text-white p-5">
+        <h2 class="text-2xl md:text-3xl font-bold mb-6">Dashboard</h2>
+
+        <nav>
+          <ul class="space-y-2">
+            <li>
+              <a
+                href="overview.html"
+                class="block py-2 px-4 hover:bg-blue-700 rounded transition duration-200 text-lg md:text-xl"
+              >
+                <span class="mr-2"><i class="fas fa-home"></i></span>Overview
+              </a>
+            </li>
+            <li>
+              <a
+                href="dashboard.html"
+                class="block py-2 px-4 hover:bg-blue-700 rounded transition duration-200 text-lg md:text-xl"
+              >
+                <span class="mr-2"><i class="fas fa-chart-bar"></i></span
+                >Dashboard
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                id="signOutLink"
+                class="block py-2 px-4 hover:bg-blue-700 rounded transition duration-200 text-lg md:text-xl"
+              >
+                <span class="mr-2"><i class="fas fa-sign-out-alt"></i></span
+                >Logout
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- User Profile Section -->
+        <div class="mt-auto pt-5 border-t border-blue-700 mt-8">
+          <div class="flex items-center">
+            <div
+              id="userProfilePic"
+              class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold"
+            >
+              <!-- Will be populated with initials -->
+            </div>
+            <div class="ml-3">
+              <p id="userNameDisplay" class="font-medium">User</p>
+              <p id="userEmailDisplay" class="text-sm text-blue-200"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1 p-4 md:p-6">
+        <a
+          href="dashboard.html"
+          class="inline-block mb-4 text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </a>
+        <h1 id="page-title" class="text-2xl md:text-3xl font-semibold mb-6">
+          Analytics
+        </h1>
+
+        <!-- Analytics content will be loaded here -->
+        <div id="data-display" class="bg-white p-6 rounded-lg shadow-lg">
+          <!-- Content will be populated by JavaScript -->
+        </div>
+
+        <!-- Analytics Cards Section -->
+        <div class="mt-6">
+          <h2 class="text-xl font-semibold mb-4 text-blue-600">Key Metrics</h2>
+          <div id="analyticsCards" class="grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Font Awesome for icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js"></script>
+
+    <script>
+      // Status indicator for online/offline
+      const networkStatus = document.getElementById("networkStatus");
+
+      function updateNetworkStatus() {
+        if (navigator.onLine) {
+          networkStatus.textContent = "Online";
+          networkStatus.classList.add("bg-green-500");
+          networkStatus.classList.remove("bg-red-500");
+        } else {
+          networkStatus.textContent = "Offline";
+          networkStatus.classList.add("bg-red-500");
+          networkStatus.classList.remove("bg-green-500");
+        }
+      }
+
+      // Listen for network status changes
+      window.addEventListener("online", updateNetworkStatus);
+      window.addEventListener("offline", updateNetworkStatus);
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize network status
+        updateNetworkStatus();
+
+        // Check if user is logged in
+        const user = checkAuthStatus();
+
+        if (user) {
+          // Display user information
+          document.getElementById("userNameDisplay").textContent =
+            user.firstName + " " + user.lastName;
+          document.getElementById("userEmailDisplay").textContent = user.email;
+
+          // Set user initials in profile pic
+          const profilePic = document.getElementById("userProfilePic");
+          const initials = (
+            user.firstName.charAt(0) +
+            (user.lastName ? user.lastName.charAt(0) : "")
+          ).toUpperCase();
+          profilePic.textContent = initials;
+        } else {
+          // Safety redirect to login if no user found
+          window.location.href = "index.html";
+          return;
+        }
+
+        // Get platform from URL parameter
+        const platform = getQueryParam("platform");
+        if (platform) {
+          // Update page title with platform name
+          document.getElementById("page-title").textContent =
+            platform.charAt(0).toUpperCase() + platform.slice(1) + " Analytics";
+
+          // Load platform data - directly call loadPlatform without showing loading UI
+          loadPlatform(platform);
+
+          // Create analytics cards for the platform
+          createAnalyticsCards(platform);
+        } else {
+          document.getElementById(
+            "data-display"
+          ).innerHTML = `<p class="text-center text-gray-500">Please select a platform from the dashboard.</p>`;
+        }
+      });
+
+      // Create analytics cards with sample data (you can replace with real data)
+      function createAnalyticsCards(platform) {
+        const cardsContainer = document.getElementById("analyticsCards");
+
+        // Sample metrics - you would replace these with actual data
+        const metrics = [
+          { title: "Engagement Rate", value: "4.2%" },
+          { title: "Follower Growth", value: "528" },
+          { title: "Posts", value: "32" },
+          { title: "Avg. Likes", value: "248" },
+        ];
+
+        // Create cards
+        metrics.forEach((metric) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="card-title">${metric.title}</div>
+            <div class="card-value">${metric.value}</div>
+          `;
+          cardsContainer.appendChild(card);
+        });
+      }
+    </script>
   </body>
 </html>
