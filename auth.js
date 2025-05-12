@@ -302,62 +302,71 @@ function logout() {
 }
 
 // Display alert message
+// Show alerts
 function showAlert(message) {
-  const alertBox = document.getElementById('alertBox');
-  const alertMessage = document.getElementById('alertMessage');
-  
-  if (alertBox && alertMessage) {
-    alertMessage.innerText = message;
-    alertBox.style.display = 'block';
-    
-    setTimeout(() => {
-      alertBox.style.display = 'none';
-    }, 5000);
-  } else {
-    // Fallback if alert elements don't exist
-    alert(message);
-  }
+  const alertBox = document.getElementById("alertBox");
+  const alertMessage = document.getElementById("alertMessage");
+  alertMessage.innerText = message;
+  alertBox.style.display = "block";
+  setTimeout(() => {
+    alertBox.style.display = "none";
+  }, 4000);
 }
 
-// Set up event listeners for sign-in/sign-up forms
-document.addEventListener('DOMContentLoaded', function() {
-  // Handle manual sign-in form submission
-  const signinForm = document.getElementById('signinForm');
-  if (signinForm) {
-    signinForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const email = document.getElementById('signinEmail').value;
-      const password = document.getElementById('signinPassword').value;
-      handleManualSignIn(email, password);
-    });
+// Handle Sign-Up
+document.getElementById("signupForm")?.addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const fName = document.getElementById("fName").value.trim();
+  const lName = document.getElementById("lName").value.trim();
+  const email = document.getElementById("signupEmail").value.trim();
+  const password = document.getElementById("signupPassword").value;
+
+  if (!email || !password) return showAlert("Email and password are required");
+
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+
+  // Check for duplicate user
+  if (users.find((user) => user.email === email)) {
+    return showAlert("User already exists. Please sign in.");
   }
-  
-  // Handle manual sign-up form submission
-  const signupForm = document.getElementById('signupForm');
-  if (signupForm) {
-    signupForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const firstName = document.getElementById('fName').value;
-      const lastName = document.getElementById('lName').value;
-      const email = document.getElementById('signupEmail').value;
-      
-      currentUser = {
-        email: email,
-        firstName: firstName,
-        lastName: lastName
-      };
-      
-      localStorage.setItem('user', JSON.stringify(currentUser));
-      window.location.href = 'dashboard.html';
-    });
-  }
-  
-  // Set up logout button if it exists
-  const logoutButton = document.getElementById('signOutLink');
-  if (logoutButton) {
-    logoutButton.addEventListener('click', function(e) {
-      e.preventDefault();
-      logout();
-    });
-  }
+
+  users.push({ fName, lName, email, password });
+  localStorage.setItem("users", JSON.stringify(users));
+  localStorage.setItem("currentUser", JSON.stringify({ email, firstName: fName, lastName: lName }));
+
+  window.location.href = "dashboard.html";
 });
+
+// Handle Sign-In
+document.getElementById("signinForm")?.addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  const email = document.getElementById("signinEmail").value.trim();
+  const password = document.getElementById("signinPassword").value;
+
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+  const user = users.find((u) => u.email === email && u.password === password);
+
+  if (!user) return showAlert("Invalid email or password");
+
+  localStorage.setItem("currentUser", JSON.stringify({
+    email: user.email,
+    firstName: user.fName,
+    lastName: user.lName,
+  }));
+
+  window.location.href = "dashboard.html";
+});
+
+// Logout logic for dashboard
+document.getElementById("signOutLink")?.addEventListener("click", function () {
+  localStorage.removeItem("currentUser");
+  window.location.href = "index.html";
+});
+
+// Used by dashboard.html to check if user is logged in
+function checkAuthStatus() {
+  const user = localStorage.getItem("currentUser");
+  return user ? JSON.parse(user) : null;
+}
