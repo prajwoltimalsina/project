@@ -13,7 +13,7 @@ let currentUser = null;
 
 // Wait for Google API to be fully loaded
 function gapiLoaded() {
-  gapi.load('client:auth2', initClient);
+   console.log("Google API loaded");
 }
 
 // Wait for Google Identity Services to be loaded
