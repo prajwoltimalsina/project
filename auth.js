@@ -10,15 +10,16 @@ const SPREADSHEET_ID = '1w1VZa8GXuwJGgTAk8wxEQ-9q4ZtIv26sAQUprKDHR30';
 // Authentication state
 let isAuthenticated = false;
 let currentUser = null;
+let googleAuth = null; // Store the Google Auth instance
 
 // Wait for Google API to be fully loaded
 function gapiLoaded() {
-   console.log("Google API loaded");
+  console.log("Google API loaded");
+  gapi.load('client:auth2', initClient);
 }
 
 // Wait for Google Identity Services to be loaded
 function gisLoaded() {
-  // Will be used when initializing auth
   console.log("Google Identity Services loaded");
 }
 
@@ -30,11 +31,14 @@ function initClient() {
     discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"],
     scope: "https://www.googleapis.com/auth/spreadsheets.readonly"
   }).then(function() {
+    // Store the auth instance for later use
+    googleAuth = gapi.auth2.getAuthInstance();
+    
     // Listen for sign-in state changes
-    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+    googleAuth.isSignedIn.listen(updateSigninStatus);
     
     // Handle the initial sign-in state
-    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+    updateSigninStatus(googleAuth.isSignedIn.get());
     
     // Set up Google Sign-In buttons after client init
     setupGoogleButtons();
@@ -48,23 +52,27 @@ function initClient() {
 function setupGoogleButtons() {
   // Only set up buttons if on the login page
   if (document.getElementById("googleSigninDiv")) {
-    google.accounts.id.initialize({
-      client_id: CLIENT_ID,
-      callback: handleGoogleSignIn,
-      auto_select: false
-    });
-    
-    // Render the sign-in button for both forms
-    google.accounts.id.renderButton(
-      document.getElementById("googleSigninDiv"),
-      { theme: "outline", size: "large", width: 250, text: "signin_with" }
-    );
-    
-    if (document.getElementById("googleSignupDiv")) {
+    if (google && google.accounts && google.accounts.id) {
+      google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleGoogleSignIn,
+        auto_select: false
+      });
+      
+      // Render the sign-in button for both forms
       google.accounts.id.renderButton(
-        document.getElementById("googleSignupDiv"),
-        { theme: "outline", size: "large", width: 250, text: "signup_with" }
+        document.getElementById("googleSigninDiv"),
+        { theme: "outline", size: "large", width: 250, text: "signin_with" }
       );
+      
+      if (document.getElementById("googleSignupDiv")) {
+        google.accounts.id.renderButton(
+          document.getElementById("googleSignupDiv"),
+          { theme: "outline", size: "large", width: 250, text: "signup_with" }
+        );
+      }
+    } else {
+      console.error("Google Identity Services not loaded properly");
     }
   }
   
@@ -83,28 +91,54 @@ function updateSigninStatus(isSignedIn) {
       email: profile.getEmail(),
       firstName: profile.getGivenName(),
       lastName: profile.getFamilyName(),
-      picture: profile.getImageUrl()
+      picture: profile.getImageUrl(),
+      authMethod: 'google' // Track authentication method
     };
     
     // Save to localStorage for persistence
     localStorage.setItem('user', JSON.stringify(currentUser));
     
     // Check if we should redirect to dashboard
-    if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
+    if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || 
+        window.location.pathname.endsWith('/')) {
       window.location.href = 'dashboard.html';
     }
   } else {
-    // Not signed in
-    isAuthenticated = false;
-    currentUser = null;
-    localStorage.removeItem('user');
-    
-    // If on a protected page, redirect to login
-    if (!window.location.pathname.endsWith('index.html') && window.location.pathname !== '/' && 
-        window.location.pathname !== '/index.html') {
-      window.location.href = 'index.html';
+    // If user data exists but Google says not signed in, we might be using local auth
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      // If this was a Google-authenticated user, they're truly signed out
+      if (userData.authMethod === 'google') {
+        isAuthenticated = false;
+        currentUser = null;
+        localStorage.removeItem('user');
+        
+        // If on a protected page, redirect to login
+        if (!window.location.pathname.endsWith('index.html') && window.location.pathname !== '/' && 
+            window.location.pathname !== '/index.html') {
+          window.location.href = 'index.html';
+        }
+      }
+    } else {
+      // Completely not authenticated
+      isAuthenticated = false;
+      currentUser = null;
+      localStorage.removeItem('user');
+      
+      // If on a protected page, redirect to login
+      if (!isOnLoginPage()) {
+        window.location.href = 'index.html';
+      }
     }
   }
+}
+
+// Helper function to check if we're on the login page
+function isOnLoginPage() {
+  return window.location.pathname.endsWith('index.html') || 
+         window.location.pathname === '/' || 
+         window.location.pathname.endsWith('/');
 }
 
 // Handle the sign-in callback from Google One Tap
@@ -116,7 +150,8 @@ function handleGoogleSignIn(response) {
     email: payload.email,
     firstName: payload.given_name,
     lastName: payload.family_name,
-    picture: payload.picture
+    picture: payload.picture,
+    authMethod: 'google' // Track authentication method
   };
   
   // Save to localStorage for persistence
@@ -154,26 +189,38 @@ function checkAuthStatus() {
     isAuthenticated = true;
     
     // If we're on the login page but already logged in, redirect to dashboard
-    if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
+    if (isOnLoginPage()) {
       window.location.href = 'dashboard.html';
     }
-  } else if (!window.location.pathname.endsWith('index.html') && window.location.pathname !== '/' &&
-             window.location.pathname !== '/index.html') {
-    // Check with Google Auth as well
-    if (typeof gapi !== 'undefined' && gapi.auth2) {
+    return currentUser;
+  } else {
+    // Check with Google Auth as well if available
+    if (googleAuth) {
       try {
-        const isSignedInWithGoogle = gapi.auth2.getAuthInstance().isSignedIn.get();
-        if (!isSignedInWithGoogle) {
-          // If not on login page and not authenticated, redirect to login page
+        const isSignedInWithGoogle = googleAuth.isSignedIn.get();
+        if (isSignedInWithGoogle) {
+          // Google says we're signed in but localStorage doesn't have user data
+          // This is a sync issue - updateSigninStatus will handle it
+          updateSigninStatus(true);
+          return currentUser;
+        } else if (!isOnLoginPage()) {
+          // Not signed in and not on login page - redirect
           window.location.href = 'index.html';
+          return null;
         }
       } catch (e) {
         console.error("Error checking Google auth status", e);
-        window.location.href = 'index.html';
+        if (!isOnLoginPage()) {
+          window.location.href = 'index.html';
+        }
+        return null;
       }
     } else {
-      // If Google Auth isn't ready yet, redirect to be safe
-      window.location.href = 'index.html';
+      // Google Auth isn't ready yet, rely on localStorage only
+      if (!isOnLoginPage() && !storedUser) {
+        window.location.href = 'index.html';
+        return null;
+      }
     }
   }
   
@@ -230,143 +277,157 @@ function addUserToDatabase(email, firstName, lastName) {
   });
 }
 
-// Function to fetch Google Sheets data
-function fetchCampaignData(callback) {
-  // Make sure gapi client is initialized and ready
-  if (!gapi.client || !gapi.client.sheets) {
-    console.error("Google API client not initialized");
-    const fallbackUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?output=csv";
-    
-    // Use Papa Parse as fallback
-    if (typeof Papa !== 'undefined') {
-      Papa.parse(fallbackUrl, {
-        download: true,
-        header: false,
-        complete: function(results) {
-          callback(results.data);
-        },
-        error: function(error) {
-          console.error("Error fetching CSV data:", error);
-          callback(null, error);
-        }
-      });
-    } else {
-      callback(null, new Error("Neither Google API nor Papa Parse is available"));
-    }
-    return;
-  }
-
-  gapi.client.sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: 'Campaign!A:B', // Assuming campaign data is in a sheet named 'Campaign'
-  }).then(function(response) {
-    const values = response.result.values || [];
-    callback(values);
-  }).catch(function(error) {
-    console.error("Error fetching campaign data:", error);
-    callback(null, error);
-  });
-}
-
-// For handling manual sign-in (kept for demonstration, but Google OAuth is preferred)
+// For handling manual sign-in
 function handleManualSignIn(email, password) {
-  // For demo purposes only - in a real app, you'd validate against your database
+  // Get users from localStorage
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+  const user = users.find(u => u.email === email && u.password === password);
+  
+  if (!user) {
+    showAlert("Invalid email or password");
+    return false;
+  }
+  
   currentUser = {
-    email: email,
-    firstName: "User",
-    lastName: ""
+    email: user.email,
+    firstName: user.fName || "User",
+    lastName: user.lName || "",
+    authMethod: 'local' // Track authentication method
   };
   
   localStorage.setItem('user', JSON.stringify(currentUser));
   window.location.href = 'dashboard.html';
+  return true;
 }
 
 // Sign out user
 function logout() {
-  if (typeof gapi !== 'undefined' && gapi.auth2) {
-    try {
-      const auth2 = gapi.auth2.getAuthInstance();
-      auth2.signOut().then(function() {
-        localStorage.removeItem('user');
-        window.location.href = 'index.html';
-      });
-    } catch (e) {
-      console.error("Error signing out from Google", e);
-      localStorage.removeItem('user');
-      window.location.href = 'index.html';
-    }
-  } else {
-    localStorage.removeItem('user');
-    window.location.href = 'index.html';
+  // Get current user to check auth method
+  const storedUser = localStorage.getItem('user');
+  let authMethod = 'local';
+  
+  if (storedUser) {
+    const userData = JSON.parse(storedUser);
+    authMethod = userData.authMethod || 'local';
   }
+  
+  // If Google-authenticated, sign out from Google too
+  if (authMethod === 'google') {
+    // Disable auto-select for Google One Tap
+    if (window.google && google.accounts && google.accounts.id) {
+      google.accounts.id.disableAutoSelect();
+    }
+    
+    // Sign out of Google Auth as well
+    if (googleAuth) {
+      googleAuth.signOut().then(function() {
+        console.log('User signed out of Google Auth');
+      }).catch(function(error) {
+        console.error('Error signing out of Google Auth:', error);
+      });
+    }
+  }
+
+  // Clear all stored user data
+  localStorage.removeItem('user');
+  isAuthenticated = false;
+  currentUser = null;
+
+  // Redirect to login
+  window.location.href = 'index.html';
 }
 
 // Display alert message
-// Show alerts
 function showAlert(message) {
   const alertBox = document.getElementById("alertBox");
   const alertMessage = document.getElementById("alertMessage");
-  alertMessage.innerText = message;
-  alertBox.style.display = "block";
-  setTimeout(() => {
-    alertBox.style.display = "none";
-  }, 4000);
-}
-
-// Handle Sign-Up
-document.getElementById("signupForm")?.addEventListener("submit", function (e) {
-  e.preventDefault();
-
-  const fName = document.getElementById("fName").value.trim();
-  const lName = document.getElementById("lName").value.trim();
-  const email = document.getElementById("signupEmail").value.trim();
-  const password = document.getElementById("signupPassword").value;
-
-  if (!email || !password) return showAlert("Email and password are required");
-
-  const users = JSON.parse(localStorage.getItem("users") || "[]");
-
-  // Check for duplicate user
-  if (users.find((user) => user.email === email)) {
-    return showAlert("User already exists. Please sign in.");
+  
+  if (alertBox && alertMessage) {
+    alertMessage.innerText = message;
+    alertBox.style.display = "block";
+    setTimeout(() => {
+      alertBox.style.display = "none";
+    }, 4000);
+  } else {
+    // Fallback if alert elements don't exist
+    alert(message);
   }
-
-  users.push({ fName, lName, email, password });
-  localStorage.setItem("users", JSON.stringify(users));
-  localStorage.setItem("currentUser", JSON.stringify({ email, firstName: fName, lastName: lName }));
-
-  window.location.href = "dashboard.html";
-});
-
-// Handle Sign-In
-document.getElementById("signinForm")?.addEventListener("submit", function (e) {
-  e.preventDefault();
-
-  const email = document.getElementById("signinEmail").value.trim();
-  const password = document.getElementById("signinPassword").value;
-
-  const users = JSON.parse(localStorage.getItem("users") || "[]");
-  const user = users.find((u) => u.email === email && u.password === password);
-
-  if (!user) return showAlert("Invalid email or password");
-
-  localStorage.setItem("currentUser", JSON.stringify({
-    email: user.email,
-    firstName: user.fName,
-    lastName: user.lName,
-  }));
-
-  window.location.href = "dashboard.html";
-});
-
-// Logout logic for dashboard
-document.getElementById("signOutLink")?.addEventListener("click", function () {
-  localStorage.removeItem("currentUser");
-  window.location.href = "index.html";
-});
-
-// Used by dashboard.html to check if user is logged in
-function checkAuthStatus() {
-  const user = localStorage.getItem("currentUser");
-  return user ? JSON.parse(user) : null;
 }
+
+// Initialize event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  // Handle Sign-Up form submission
+  const signupForm = document.getElementById("signupForm");
+  if (signupForm) {
+    signupForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      const fName = document.getElementById("fName").value.trim();
+      const lName = document.getElementById("lName").value.trim();
+      const email = document.getElementById("signupEmail").value.trim();
+      const password = document.getElementById("signupPassword").value;
+      
+      if (!email || !password) {
+        showAlert("Email and password are required");
+        return;
+      }
+      
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      
+      // Check for duplicate user
+      if (users.find((user) => user.email === email)) {
+        showAlert("User already exists. Please sign in.");
+        return;
+      }
+      
+      users.push({ fName, lName, email, password });
+      localStorage.setItem("users", JSON.stringify(users));
+      
+      // Set current user
+      currentUser = {
+        email: email,
+        firstName: fName,
+        lastName: lName,
+        authMethod: 'local' // Track authentication method
+      };
+      
+      localStorage.setItem('user', JSON.stringify(currentUser));
+      window.location.href = "dashboard.html";
+    });
+  }
+  
+  // Handle Sign-In form submission
+  const signinForm = document.getElementById("signinForm");
+  if (signinForm) {
+    signinForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById("signinEmail").value.trim();
+      const password = document.getElementById("signinPassword").value;
+      
+      handleManualSignIn(email, password);
+    });
+  }
+  
+  // Setup logout links
+  const logoutLinks = document.querySelectorAll("#signOutLink, .logout-button");
+  logoutLinks.forEach(link => {
+    if (link) {
+      link.addEventListener("click", function(e) {
+        e.preventDefault();
+        logout();
+      });
+    }
+  });
+  
+  // Update user display on dashboard
+  const userDisplays = document.querySelectorAll(".user-display");
+  if (userDisplays.length > 0) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user && user.firstName) {
+      userDisplays.forEach(display => {
+        display.textContent = `${user.firstName} ${user.lastName || ''}`.trim();
+      });
+    }
+  }
+});

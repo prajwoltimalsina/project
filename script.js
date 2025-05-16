@@ -1,27 +1,56 @@
-// Form switching logic
-const signUpButton = document.getElementById('signUpButton');
-const signInButton = document.getElementById('signInButton');
-const signInForm = document.getElementById('signIn');
-const signUpForm = document.getElementById('signup');
+// Handle page-specific initialization
+document.addEventListener('DOMContentLoaded', function() {
+  // Form switching logic for the login page
+  const signUpButton = document.getElementById('signUpButton');
+  const signInButton = document.getElementById('signInButton');
+  const signInForm = document.getElementById('signIn');
+  const signUpForm = document.getElementById('signup');
 
-// Only execute this code if we're on the login page
-if (signUpButton && signInButton) {
-  signUpButton.addEventListener('click', function() {
-    signInForm.style.display = "none";
-    signUpForm.style.display = "block";
-  });
+  // Only execute this code if we're on the login page with these elements
+  if (signUpButton && signInButton && signInForm && signUpForm) {
+    signUpButton.addEventListener('click', function() {
+      signInForm.style.display = "none";
+      signUpForm.style.display = "block";
+    });
 
-  signInButton.addEventListener('click', function() {
-    signInForm.style.display = "block";
-    signUpForm.style.display = "none";
-  });
-}
+    signInButton.addEventListener('click', function() {
+      signInForm.style.display = "block";
+      signUpForm.style.display = "none";
+    });
+  }
 
+  // If we're on a protected page, display user info if available
+  if (window.location.pathname.includes('dashboard') || window.location.pathname.includes('overview')) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user && user.firstName) {
+      // Find elements that should display user info
+      const userDisplayElements = document.querySelectorAll('.user-display');
+      userDisplayElements.forEach(element => {
+        element.textContent = `${user.firstName} ${user.lastName || ''}`.trim();
+      });
+    } else {
+      // Not authenticated properly, redirect to login
+      window.location.href = 'index.html';
+    }
+  }
 
+  // Setup Google Sheets data loading for overview pages
+  const platform = getQueryParam('platform');
+  if (platform && document.getElementById('data-display')) {
+    loadPlatform(platform);
+  } else if (document.getElementById('data-display')) {
+    document.getElementById('data-display').innerHTML = `<p>Please select a platform from the dashboard.</p>`;
+  }
+});
+
+// Helper function to get query parameters
 function getQueryParam(param) {
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get(param);
-}function fetchGoogleSheetsData(platform, callback) {
+}
+
+// Fetch data from Google Sheets based on platform
+function fetchGoogleSheetsData(platform, callback) {
   const sheetUrls = {
     facebook: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?gid=717789882&single=true&output=csv',
     instagram: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?gid=283315654&single=true&output=csv',
@@ -29,10 +58,17 @@ function getQueryParam(param) {
     linkedin: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?gid=1276556531&single=true&output=csv'
   };
   
-  
   const csvUrl = sheetUrls[platform];
   if (!csvUrl) {
     console.error("Invalid platform:", platform);
+    callback(null, new Error("Invalid platform"));
+    return;
+  }
+
+  // Check if Papa Parse is loaded
+  if (typeof Papa === 'undefined') {
+    console.error("Papa Parse library is not loaded");
+    callback(null, new Error("Papa Parse not available"));
     return;
   }
 
@@ -40,36 +76,53 @@ function getQueryParam(param) {
     download: true,
     header: true,
     complete: function(results) {
-      console.log("Parsed Data:", results.data);  // ✅ LOG ADDED HERE
+      console.log("Parsed Data:", results.data);
       callback(results.data);
     },
-    
     error: function(error) {
       console.error("CSV Parse Error:", error);
       callback(null, error);
     }
   });
 }
+
+// Load and display platform data
 function loadPlatform(platform) {
-  fetchGoogleSheetsData(platform, function(data) {
-    const container = document.getElementById('data-display');
+  const container = document.getElementById('data-display');
+  if (!container) {
+    console.error("Container element not found");
+    return;
+  }
+  
+  // Show loading indicator
+  container.innerHTML = '<p>Loading data...</p>';
+  
+  fetchGoogleSheetsData(platform, function(data, error) {
+    if (error) {
+      container.innerHTML = `<p>Error loading data: ${error.message}</p>`;
+      return;
+    }
+    
     if (!data || data.length === 0) {
-      console.log("Fetched data length:", data ? data.length : 0);  // ✅ LOG ADDED HERE
+      console.log("Fetched data length:", data ? data.length : 0);
       container.innerHTML = `<p>No data found for ${platform}.</p>`;
       return;
     }
     
-
     let html = '<table border="1"><thead><tr>';
-    Object.keys(data[0]).forEach(key => {
+    
+    // Extract headers from the first row
+    const headers = Object.keys(data[0]);
+    headers.forEach(key => {
       html += `<th>${key}</th>`;
     });
     html += '</tr></thead><tbody>';
 
+    // Add data rows
     data.forEach(row => {
       html += '<tr>';
-      Object.values(row).forEach(value => {
-        html += `<td>${value}</td>`;
+      headers.forEach(key => {
+        html += `<td>${row[key] || ''}</td>`;
       });
       html += '</tr>';
     });
@@ -78,45 +131,3 @@ function loadPlatform(platform) {
     container.innerHTML = html;
   });
 }
-
-
-// If we're on a protected page (dashboard or overview) check authentication
-if (window.location.pathname.includes('dashboard') || window.location.pathname.includes('overview')) {
-  // This will be handled by auth.js checkAuthStatus function
-  
-  // Display user info if available
-  document.addEventListener('DOMContentLoaded', function() {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-      // Find elements that should display user info
-      const userDisplayElements = document.querySelectorAll('.user-display');
-      userDisplayElements.forEach(element => {
-        element.textContent = `${user.firstName} ${user.lastName}`;
-      });
-    }
-    
-    // Set up logout button functionality
-    const logoutButtons = document.querySelectorAll('[href="logout.php"], .logout-button');
-    logoutButtons.forEach(button => {
-      button.addEventListener('click', function(e) {
-        e.preventDefault();
-        logout();  // Function defined in auth.js
-      });
-      
-      // Update href to make it work without backend
-      if (button.hasAttribute('href')) {
-        button.setAttribute('href', 'javascript:void(0);');
-      }
-    });
-  });
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  const platform = getQueryParam('platform');
-  if (platform) {
-    loadPlatform(platform);
-  } else {
-    document.getElementById('data-display').innerHTML = `<p>Please select a platform from the dashboard.</p>`;
-  }
-});
-
