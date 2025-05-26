@@ -8,12 +8,24 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Google API Scripts -->
-    <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()" onreadystatechange="if (this.readyState === 'complete') this.onload()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
-    
-    <!-- Your authentication script -->
+    <!-- Your authentication script - Load this first -->
     <script src="auth.js"></script>
+
+    <!-- Google API Scripts -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+
+    <script>
+      // Initialize Google API when the page loads
+      window.onload = function() {
+        if (typeof gapi !== 'undefined') {
+          gapiLoaded();
+        }
+        if (typeof google !== 'undefined' && google.accounts) {
+          gisLoaded();
+        }
+      };
+    </script>
 
     <style>
       /* Animation for content */
