@@ -10,15 +10,9 @@
     />
     <link rel="stylesheet" href="style.css" />
 
-    <!-- Google API Scripts - Load in correct order -->
-    <script
-      src="https://apis.google.com/js/api.js"
-      onload="gapiLoaded()"
-    ></script>
-    <script
-      src="https://accounts.google.com/gsi/client"
-      onload="gisLoaded()"
-    ></script>
+    <!-- Google API Scripts - Add these before other scripts -->
+    <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()" onreadystatechange="if (this.readyState === 'complete') this.onload()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 
     <!-- Papa Parse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>

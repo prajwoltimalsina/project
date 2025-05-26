@@ -54,6 +54,11 @@ function gisLoaded() {
 }
 
 // Initialize the Google API client
+function handleClientLoad() {
+  gapi.load('client:auth2', initClient);
+}
+
+// Initialize the Google API client
 function initClient() {
   gapi.client.init({
     apiKey: API_KEY,
@@ -273,7 +278,18 @@ function showAlert(message) {
 // For handling manual sign-in
 async function handleManualSignIn(email, password) {
   try {
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const usersStr = localStorage.getItem("users");
+    if (!usersStr) {
+      showAlert("Invalid email or password");
+      return false;
+    }
+    
+    const users = JSON.parse(usersStr);
+    if (!Array.isArray(users)) {
+      showAlert("Invalid user data format");
+      return false;
+    }
+    
     const hashedPassword = await hashPassword(password);
     const user = users.find(u => u.email === email && u.hashedPassword === hashedPassword);
     

@@ -9,14 +9,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Google API Scripts -->
-    <script
-      src="https://apis.google.com/js/api.js"
-      onload="gapiLoaded()"
-    ></script>
-    <script
-      src="https://accounts.google.com/gsi/client"
-      onload="gisLoaded()"
-    ></script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()" onreadystatechange="if (this.readyState === 'complete') this.onload()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+    
+    <!-- Your authentication script -->
     <script src="auth.js"></script>
 
     <style>
