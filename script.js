@@ -21,15 +21,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // If we're on a protected page, display user info if available
   if (window.location.pathname.includes('dashboard') || window.location.pathname.includes('overview')) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user && user.firstName) {
-      // Find elements that should display user info
-      const userDisplayElements = document.querySelectorAll('.user-display');
-      userDisplayElements.forEach(element => {
-        element.textContent = `${user.firstName} ${user.lastName || ''}`.trim();
-      });
+    const sessionData = localStorage.getItem('userSession');
+    if (sessionData) {
+      try {
+        const { user, expiresAt } = JSON.parse(sessionData);
+        
+        // Check if session has expired
+        if (new Date(expiresAt) <= new Date()) {
+          // Session expired, redirect to login
+          window.location.href = 'index.html';
+          return;
+        }
+
+        // Find elements that should display user info
+        const userDisplayElements = document.querySelectorAll('.user-display');
+        userDisplayElements.forEach(element => {
+          element.textContent = `${user.firstName} ${user.lastName || ''}`.trim();
+        });
+      } catch (error) {
+        console.error('Error parsing session data:', error);
+        window.location.href = 'index.html';
+      }
     } else {
-      // Not authenticated properly, redirect to login
+      // No session data found, redirect to login
       window.location.href = 'index.html';
     }
   }
@@ -52,6 +66,7 @@ function getQueryParam(param) {
 // Fetch data from Google Sheets based on platform
 function fetchGoogleSheetsData(platform, callback) {
   const sheetUrls = {
+    campaign: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?gid=0&single=true&output=csv',
     facebook: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?gid=717789882&single=true&output=csv',
     instagram: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?gid=283315654&single=true&output=csv',
     twitter: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?gid=649775317&single=true&output=csv',

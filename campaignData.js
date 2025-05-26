@@ -85,26 +85,25 @@ function getCampaignData() {
   });
 }
 
-// Define the missing fetchCampaignData function
+// Function to fetch campaign data from Google Sheets
 function fetchCampaignData(callback) {
-  // Sample campaign data to be returned if fetching from Google Sheets API fails
-  const sampleData = [
-    ["Engagement Rate", "5.2"],
-    ["Follower Growth", "1230"],
-    ["Total Reached", "25600"],
-    ["Impressions", "45800"],
-    ["Clicks", "2350"],
-    ["Conversions", "320"],
-    ["Cost per Click", "0.75"],
-    ["ROI", "220"]
-  ];
-  
-  // Simulate API call with setTimeout
-  setTimeout(() => {
-    // Normally we would fetch from a real API here
-    // For now, just return sample data
-    callback(sampleData, null);
-  }, 1000);
+  const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?gid=0&single=true&output=csv';
+
+  Papa.parse(csvUrl, {
+    download: true,
+    header: false,
+    complete: function(results) {
+      if (results.data && results.data.length > 0) {
+        callback(results.data, null);
+      } else {
+        callback(null, new Error('No data in CSV response'));
+      }
+    },
+    error: function(error) {
+      console.error("Error fetching or parsing the CSV data:", error);
+      callback(null, error);
+    }
+  });
 }
 
 // Fetch campaign data with offline support
@@ -112,20 +111,12 @@ async function fetchCampaignDataWithOfflineSupport() {
   // Try to fetch from network first
   if (navigator.onLine) {
     try {
-      // Try Google Sheets API first
-      const onlineData = await new Promise((resolve) => {
-        fetchCampaignData(function(data, error) {
-          if (data && data.length > 0) {
-            resolve(data);
+      const onlineData = await new Promise((resolve, reject) => {
+        fetchCampaignData((data, error) => {
+          if (error) {
+            reject(error);
           } else {
-            // Fall back to CSV
-            fetchCSVData((csvData, csvError) => {
-              if (csvData) {
-                resolve(csvData);
-              } else {
-                resolve(null);
-              }
-            });
+            resolve(data);
           }
         });
       });
@@ -152,26 +143,4 @@ async function fetchCampaignDataWithOfflineSupport() {
   
   // If all else fails, return null
   return null;
-}
-
-// Function to fetch CSV data (moved from dashboard.js)
-function fetchCSVData(callback) {
-  // CSV URL from published Google Sheet
-  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vShkyha9RUILD6tgutsA9KqriklzAITyydxblmfyYvRvC7lLS60JMsVM3am-8wwu5Kt5a9mHSDvoQgO/pub?output=csv";
-
-  Papa.parse(csvUrl, {
-    download: true,
-    header: false,
-    complete: function(results) {
-      if (results.data && results.data.length > 0) {
-        callback(results.data);
-      } else {
-        callback(null, new Error('No data in CSV response'));
-      }
-    },
-    error: function(error) {
-      console.error("Error fetching or parsing the CSV data:", error);
-      callback(null, error);
-    }
-  });
 }

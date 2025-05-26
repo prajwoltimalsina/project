@@ -205,12 +205,27 @@
         updateNetworkStatus();
 
         // Check if user is logged in
-        const user = checkAuthStatus();
+        const sessionData = localStorage.getItem("userSession");
+        if (!sessionData) {
+          // Redirect to login if no session found
+          window.location.href = "index.html";
+          return;
+        }
 
-        if (user) {
+        try {
+          const { user, expiresAt } = JSON.parse(sessionData);
+
+          // Check if session has expired
+          if (new Date(expiresAt) <= new Date()) {
+            // Session expired, redirect to login
+            window.location.href = "index.html";
+            return;
+          }
+
           // Display user information
-          document.getElementById("userNameDisplay").textContent =
-            user.firstName + " " + user.lastName;
+          document.getElementById("userNameDisplay").textContent = `${
+            user.firstName
+          } ${user.lastName || ""}`.trim();
           document.getElementById("userEmailDisplay").textContent = user.email;
 
           // Set user initials in profile pic
@@ -220,28 +235,29 @@
             (user.lastName ? user.lastName.charAt(0) : "")
           ).toUpperCase();
           profilePic.textContent = initials;
-        } else {
-          // Safety redirect to login if no user found
+
+          // Get platform from URL parameter
+          const platform = getQueryParam("platform");
+          if (platform) {
+            // Update page title with platform name
+            document.getElementById("page-title").textContent =
+              platform.charAt(0).toUpperCase() +
+              platform.slice(1) +
+              " Analytics";
+
+            // Load platform data - directly call loadPlatform without showing loading UI
+            loadPlatform(platform);
+
+            // Create analytics cards for the platform
+            createAnalyticsCards(platform);
+          } else {
+            document.getElementById(
+              "data-display"
+            ).innerHTML = `<p class="text-center text-gray-500">Please select a platform from the dashboard.</p>`;
+          }
+        } catch (error) {
+          console.error("Error parsing session data:", error);
           window.location.href = "index.html";
-          return;
-        }
-
-        // Get platform from URL parameter
-        const platform = getQueryParam("platform");
-        if (platform) {
-          // Update page title with platform name
-          document.getElementById("page-title").textContent =
-            platform.charAt(0).toUpperCase() + platform.slice(1) + " Analytics";
-
-          // Load platform data - directly call loadPlatform without showing loading UI
-          loadPlatform(platform);
-
-          // Create analytics cards for the platform
-          createAnalyticsCards(platform);
-        } else {
-          document.getElementById(
-            "data-display"
-          ).innerHTML = `<p class="text-center text-gray-500">Please select a platform from the dashboard.</p>`;
         }
       });
 

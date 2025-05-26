@@ -223,13 +223,41 @@
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         // Check if user is logged in
-        const user = localStorage.getItem("user")
-          ? JSON.parse(localStorage.getItem("user"))
-          : null;
-
-        if (!user) {
-          // Redirect to login if no user found
+        const sessionData = localStorage.getItem('userSession');
+        if (!sessionData) {
+          // Redirect to login if no session found
           window.location.href = "index.html";
+          return;
+        }
+
+        try {
+          const { user, expiresAt } = JSON.parse(sessionData);
+          
+          // Check if session has expired
+          if (new Date(expiresAt) <= new Date()) {
+            // Session expired, redirect to login
+            window.location.href = 'index.html';
+            return;
+          }
+
+          // Display user information
+          if (document.getElementById("userNameDisplay")) {
+            document.getElementById("userNameDisplay").textContent = 
+              `${user.firstName} ${user.lastName || ''}`.trim();
+          }
+          if (document.getElementById("userEmailDisplay")) {
+            document.getElementById("userEmailDisplay").textContent = user.email;
+          }
+          
+          // Set user initials in profile pic if element exists
+          const profilePic = document.getElementById("userProfilePic");
+          if (profilePic) {
+            const initials = (user.firstName.charAt(0) + (user.lastName ? user.lastName.charAt(0) : '')).toUpperCase();
+            profilePic.textContent = initials;
+          }
+        } catch (error) {
+          console.error('Error parsing session data:', error);
+          window.location.href = 'index.html';
         }
       });
     </script>

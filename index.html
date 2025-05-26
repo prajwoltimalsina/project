@@ -102,8 +102,36 @@
             id="signupPassword"
             placeholder="Password"
             required
+            minlength="8"
           />
           <label for="signupPassword">Password</label>
+        </div>
+
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input
+            type="password"
+            name="confirmPassword"
+            id="confirmPassword"
+            placeholder="Confirm Password"
+            required
+            minlength="8"
+          />
+          <label for="confirmPassword">Confirm Password</label>
+        </div>
+
+        <div
+          class="password-requirements"
+          style="font-size: 0.8rem; color: #666; margin-bottom: 1rem"
+        >
+          Password must contain:
+          <ul style="list-style-type: disc; margin-left: 1.5rem">
+            <li>At least 8 characters</li>
+            <li>One uppercase letter</li>
+            <li>One lowercase letter</li>
+            <li>One number</li>
+            <li>One special character (!@#$%^&*)</li>
+          </ul>
         </div>
 
         <input type="submit" class="btn" value="Sign Up" />
