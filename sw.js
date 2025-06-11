@@ -34,15 +34,18 @@ workbox.routing.registerRoute(
 // Service Worker Version
 const CACHE_NAME = 'campaign-manager-v1';
 
+// Base path for GitHub Pages
+const BASE_PATH = '/project/';
+
 // Files to cache
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/dashboard.html',
-  '/overview.html',
-  '/auth.js',
-  '/script.js',
-  '/style.css'
+  BASE_PATH,
+  BASE_PATH + 'index.html',
+  BASE_PATH + 'dashboard.html',
+  BASE_PATH + 'overview.html',
+  BASE_PATH + 'auth.js',
+  BASE_PATH + 'script.js',
+  BASE_PATH + 'style.css'
 ];
 
 // Install event

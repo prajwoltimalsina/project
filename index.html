@@ -24,12 +24,9 @@
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          const swPath = window.location.pathname.includes('github.io') 
-            ? '/project/sw.js'   // Path for GitHub Pages
-            : '/sw.js';          // Path for local development
-            
+          const basePath = '/project/';
           navigator.serviceWorker
-            .register(swPath)
+            .register(basePath + 'sw.js')
             .then((reg) => console.log("Service Worker registered"))
             .catch((err) => console.log("SW registration failed: ", err));
         });

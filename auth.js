@@ -148,18 +148,25 @@ function updateSigninStatus(isSignedIn) {
   }
 }
 
+// Helper function to get base path
+function getBasePath() {
+  return '/project/';
+}
+
 // Helper function to check if we're on the login page
 function isOnLoginPage() {
-  return window.location.pathname.endsWith('index.html') || 
-         window.location.pathname === '/' || 
-         window.location.pathname === '';
+  const path = window.location.pathname;
+  return path.endsWith('index.html') || 
+         path.endsWith('/') || 
+         path.endsWith('/project/');
 }
 
 // Helper function to check if we're on a protected page
 function isOnProtectedPage() {
-  return window.location.pathname.includes('dashboard') || 
-         window.location.pathname.includes('overview') || 
-         window.location.pathname.includes('analytics');
+  const path = window.location.pathname;
+  return path.includes('dashboard') || 
+         path.includes('overview') || 
+         path.includes('analytics');
 }
 
 // Handle the sign-in callback from Google One Tap
@@ -191,8 +198,8 @@ function handleGoogleSignIn(response) {
       addUserToDatabase(currentUser.email, currentUser.firstName, currentUser.lastName);
     }
     
-    // Navigate to dashboard
-    window.location.href = 'dashboard.html';
+    // Navigate to dashboard with correct path
+    window.location.href = getBasePath() + 'dashboard.html';
   });
 }
 
@@ -255,7 +262,7 @@ function handleSignOut() {
     google.accounts.id.disableAutoSelect();
   }
 
-  window.location.href = 'index.html';
+  window.location.href = getBasePath() + 'index.html';
 }
 
 // Display alert message
@@ -313,7 +320,7 @@ async function handleManualSignIn(email, password) {
     };
     localStorage.setItem('userSession', JSON.stringify(sessionData));
     
-    window.location.href = 'dashboard.html';
+    window.location.href = getBasePath() + 'dashboard.html';
     return true;
   } catch (error) {
     console.error('Error during sign in:', error);
@@ -391,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         localStorage.setItem('userSession', JSON.stringify(sessionData));
         
-        window.location.href = 'dashboard.html';
+        window.location.href = getBasePath() + 'dashboard.html';
       } catch (error) {
         console.error('Error during sign up:', error);
         showAlert("An error occurred during sign up");
