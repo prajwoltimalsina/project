@@ -2,6 +2,17 @@
 <html>
   <head>
     <title>Platform Analytics</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self' data: blob:;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
+        img-src 'self' data: https://*.googleusercontent.com;
+        connect-src 'self' https://docs.google.com https://sheets.googleapis.com https://accounts.google.com https://www.googleapis.com https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com;
+        frame-src 'self' https://accounts.google.com https://content-sheets.googleapis.com https://*.google.com;
+    "
+    />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -11,69 +22,8 @@
     <!-- PapaParse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
-    <!-- Google API Scripts -->
-    <script
-      src="https://apis.google.com/js/api.js"
-      onload="gapiLoaded()"
-    ></script>
-    <script
-      src="https://accounts.google.com/gsi/client"
-      onload="gisLoaded()"
-    ></script>
-    <script src="auth.js"></script>
-    <script src="campaignData.js"></script>
-    <script src="script.js"></script>
-
-    <style>
-      /* Original analytics.html styles */
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1rem;
-        padding: 1rem;
-      }
-
-      .card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        padding: 1rem;
-        border-left: 4px solid #4f46e5;
-        transition: transform 0.2s;
-      }
-
-      .card:hover {
-        transform: translateY(-4px);
-      }
-
-      .card-title {
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: #6b7280;
-        margin-bottom: 0.25rem;
-      }
-
-      .card-value {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #111827;
-      }
-
-      /* Table styles */
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-top: 20px;
-      }
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 8px;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-    </style>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
 
   <body class="bg-gray-100 min-h-screen">
@@ -169,16 +119,26 @@
           <!-- Content will be populated by JavaScript -->
         </div>
 
-        <!-- Analytics Cards Section -->
+        <!-- Graph Container -->
         <div class="mt-6">
-          <h2 class="text-xl font-semibold mb-4 text-blue-600">Key Metrics</h2>
-          <div id="analyticsCards" class="grid"></div>
+          <h2 class="text-xl font-semibold mb-4 text-blue-600">
+            Performance Trends
+          </h2>
+          <div class="bg-white p-6 rounded-lg shadow-lg">
+            <canvas id="platformChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Font Awesome for icons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js"></script>
+
+    <!-- Google API Scripts - Load at the end of body -->
+    <script src="auth.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="campaignData.js"></script>
 
     <script>
       // Status indicator for online/offline
@@ -247,43 +207,20 @@
 
             // Load platform data - directly call loadPlatform without showing loading UI
             loadPlatform(platform);
-
-            // Create analytics cards for the platform
-            createAnalyticsCards(platform);
           } else {
             document.getElementById(
               "data-display"
-            ).innerHTML = `<p class="text-center text-gray-500">Please select a platform from the dashboard.</p>`;
+            ).innerHTML = `<p>Please select a platform from the dashboard.</p>`;
           }
         } catch (error) {
           console.error("Error parsing session data:", error);
+          // In case of error, treat as not logged in and redirect
           window.location.href = "index.html";
         }
       });
-
-      // Create analytics cards with sample data (you can replace with real data)
-      function createAnalyticsCards(platform) {
-        const cardsContainer = document.getElementById("analyticsCards");
-
-        // Sample metrics - you would replace these with actual data
-        const metrics = [
-          { title: "Engagement Rate", value: "4.2%" },
-          { title: "Follower Growth", value: "528" },
-          { title: "Posts", value: "32" },
-          { title: "Avg. Likes", value: "248" },
-        ];
-
-        // Create cards
-        metrics.forEach((metric) => {
-          const card = document.createElement("div");
-          card.className = "card";
-          card.innerHTML = `
-            <div class="card-title">${metric.title}</div>
-            <div class="card-value">${metric.value}</div>
-          `;
-          cardsContainer.appendChild(card);
-        });
-      }
     </script>
+
+    <!-- Main project script -->
+    <script src="script.js"></script>
   </body>
 </html>

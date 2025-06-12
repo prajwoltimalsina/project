@@ -95,13 +95,15 @@ function fetchGoogleSheetsData(platform, callback) {
       callback(results.data);
     },
     error: function(error) {
-      console.error("CSV Parse Error:", error);
+      console.error("CSV Parse Error details:", error);
       callback(null, error);
     }
   });
 }
 
 // Load and display platform data
+let currentChart = null; // Declare a variable to hold the chart instance
+
 function loadPlatform(platform) {
   const container = document.getElementById('data-display');
   if (!container) {
@@ -119,30 +121,110 @@ function loadPlatform(platform) {
     }
     
     if (!data || data.length === 0) {
-      console.log("Fetched data length:", data ? data.length : 0);
-      container.innerHTML = `<p>No data found for ${platform}.</p>`;
+      container.innerHTML = `<p>No data available for ${platform}.</p>`;
       return;
     }
+
+    console.log(`Data fetched for ${platform}:`, data);
     
-    let html = '<table border="1"><thead><tr>';
-    
-    // Extract headers from the first row
+    // Create table
+    let html = '<div class="overflow-x-auto">'; // Add responsive container
+    html += '<table class="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden">';
+    html += '<thead class="bg-blue-800 text-white">'; // Styled header
     const headers = Object.keys(data[0]);
     headers.forEach(key => {
-      html += `<th>${key}</th>`;
+      html += '<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">' + key + '</th>'; // Styled table header
     });
-    html += '</tr></thead><tbody>';
+    html += '</thead><tbody class="bg-white divide-y divide-gray-200">'; // Styled tbody
 
-    // Add data rows
     data.forEach(row => {
       html += '<tr>';
       headers.forEach(key => {
-        html += `<td>${row[key] || ''}</td>`;
+        html += '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">' + (row[key] || '') + '</td>'; // Styled table data
       });
       html += '</tr>';
     });
 
     html += '</tbody></table>';
+    html += '</div>'; // Close responsive container
     container.innerHTML = html;
+
+    // Create graph
+    const ctx = document.getElementById('platformChart');
+    if (ctx) {
+      // Prepare data for the graph
+      const labels = data.map(row => row.Date || row.date || '');
+      
+      // Define all metrics to track
+      const metrics = [
+        { key: 'Total Amount', color: 'rgb(75, 192, 192)' },
+        { key: 'Paid Amount', color: 'rgb(255, 99, 132)' },
+        { key: 'Due Amount', color: 'rgb(54, 162, 235)' },
+        { key: 'Reach', color: 'rgb(255, 159, 64)' },
+        { key: 'Impressions', color: 'rgb(153, 102, 255)' },
+        { key: 'Engagement rate', color: 'rgb(255, 205, 86)' },
+        { key: 'Follower growth', color: 'rgb(201, 203, 207)' }
+      ];
+
+      // Create datasets for each metric
+      const datasets = metrics.map(metric => {
+        const values = data.map(row => {
+          const value = parseFloat(row[metric.key] || 0);
+          return isNaN(value) ? 0 : value;
+        });
+
+        return {
+          label: metric.key,
+          data: values,
+          backgroundColor: metric.color,
+          borderColor: metric.color,
+          borderWidth: 1,
+          borderRadius: 4,
+          barPercentage: 0.8,
+          categoryPercentage: 0.9
+        };
+      });
+
+      // Create the chart
+      if (currentChart) {
+        currentChart.destroy(); // Destroy existing chart if it exists
+      }
+      currentChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: `${platform.charAt(0).toUpperCase() + platform.slice(1)} Performance Metrics`
+            },
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Value'
+              },
+              stacked: false
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Date'
+              },
+              stacked: false
+            }
+          }
+        }
+      });
+    }
   });
 }

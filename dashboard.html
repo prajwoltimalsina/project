@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Social Media Campaign Dashboard</title>
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self' data: blob:;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
+        img-src 'self' data: https://*.googleusercontent.com;
+        connect-src 'self' https://docs.google.com https://sheets.googleapis.com https://accounts.google.com https://www.googleapis.com https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com;
+        frame-src 'self' https://accounts.google.com https://content-sheets.googleapis.com https://*.google.com;
+    ">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,57 +21,7 @@
 
     <!-- PapaParse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-
-    <!-- Google API Scripts -->
-    <script
-      src="https://apis.google.com/js/api.js"
-      onload="gapiLoaded()"
-    ></script>
-    <script
-      src="https://accounts.google.com/gsi/client"
-      onload="gisLoaded()"
-    ></script>
-    <script src="auth.js"></script>
-
-    <!-- Add the new campaignData.js script -->
-    <script src="campaignData.js"></script>
-    <script src="script.js"></script>
-
-    <style>
-      /* Animation for metrics counters */
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-      .fade-in {
-        animation: fadeIn 0.5s ease-in-out;
-      }
-
-      /* Loading spinner */
-      .loader {
-        border: 5px solid #f3f3f3;
-        border-top: 5px solid #3498db;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-    </style>
   </head>
-  <script src="script.js"></script>
-
   <body class="bg-gray-100 min-h-screen">
     <!-- Alert Box for messages -->
     <div
@@ -302,10 +260,31 @@
       </div>
     </div>
 
+    <!-- Google API Scripts - Load at the end of body -->
+    <script src="auth.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+
+    <!-- Add the new campaignData.js script -->
+    <script src="campaignData.js"></script>
+
     <!-- Font Awesome for icons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js"></script>
 
+    <!-- Main project script -->
+    <script src="script.js"></script>
+
     <script>
+      // Initialize Google API after DOM content is loaded
+      document.addEventListener("DOMContentLoaded", function() {
+        if (typeof gapi !== 'undefined') {
+          gapiLoaded();
+        }
+        if (typeof google !== 'undefined' && google.accounts) {
+          gisLoaded();
+        }
+      });
+
       // Status indicator for online/offline
       const networkStatus = document.getElementById("networkStatus");
 
@@ -626,7 +605,5 @@
         }
       }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <script src="script.js"></script>
   </body>
 </html>

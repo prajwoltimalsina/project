@@ -4,47 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Register and Login</title>
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self' data: blob:;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com;
+        style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;
+        img-src 'self' data: https://*.googleusercontent.com;
+        connect-src 'self' https://docs.google.com https://sheets.googleapis.com https://accounts.google.com https://www.googleapis.com https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com;
+        frame-src 'self' https://accounts.google.com https://content-sheets.googleapis.com https://*.google.com;
+    ">
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
     />
     <link rel="stylesheet" href="style.css" />
 
-    <!-- Your authentication script - Load this first -->
-    <script src="auth.js"></script>
-
-    <!-- Google API Scripts -->
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
-
     <!-- Papa Parse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-
-    <!-- Service Worker Registration -->
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          const swPath = window.location.pathname.includes('github.io') 
-            ? '/project/sw.js'   // Path for GitHub Pages
-            : '/sw.js';          // Path for local development
-            
-          navigator.serviceWorker
-            .register(swPath)
-            .then((reg) => console.log("Service Worker registered"))
-            .catch((err) => console.log("SW registration failed: ", err));
-        });
-      }
-
-      // Initialize Google API when the page loads
-      window.onload = function() {
-        if (typeof gapi !== 'undefined') {
-          gapiLoaded();
-        }
-        if (typeof google !== 'undefined' && google.accounts) {
-          gisLoaded();
-        }
-      };
-    </script>
   </head>
   <body>
     <!-- Alert Box for messages -->
@@ -199,7 +174,38 @@
       </div>
     </div>
 
-    <!-- Load JavaScript files in proper order -->
+    <!-- Google API Scripts - Load at the end of body -->
+    <script src="auth.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          const swPath = window.location.pathname.includes('github.io') 
+            ? '/project/sw.js'   // Path for GitHub Pages
+            : '/sw.js';          // Path for local development
+            
+          navigator.serviceWorker
+            .register(swPath)
+            .then((reg) => console.log("Service Worker registered"))
+            .catch((err) => console.log("SW registration failed: ", err));
+        });
+      }
+
+      // Initialize Google API after DOM content is loaded
+      document.addEventListener("DOMContentLoaded", function() {
+        if (typeof gapi !== 'undefined') {
+          gapiLoaded();
+        }
+        if (typeof google !== 'undefined' && google.accounts) {
+          gisLoaded();
+        }
+      });
+    </script>
+
+    <!-- Main project script -->
     <script src="script.js"></script>
   </body>
 </html>

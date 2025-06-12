@@ -85,33 +85,39 @@ function initClient() {
 
 // Initialize the Google Sign-In buttons
 function setupGoogleButtons() {
-  // Only set up buttons if on the login page
-  if (document.getElementById("googleSigninDiv")) {
-    if (google && google.accounts && google.accounts.id) {
-      google.accounts.id.initialize({
-        client_id: CLIENT_ID,
-        callback: handleGoogleSignIn,
-        auto_select: false
-      });
-      
-      // Render the sign-in button for both forms
+  const googleSigninDiv = document.getElementById("googleSigninDiv");
+  const googleSignupDiv = document.getElementById("googleSignupDiv");
+
+  // Only set up buttons if Google Identity Services is loaded and on a page with the divs
+  if (google && google.accounts && google.accounts.id && (googleSigninDiv || googleSignupDiv)) {
+    google.accounts.id.initialize({
+      client_id: CLIENT_ID,
+      callback: handleGoogleSignIn,
+      auto_select: false
+    });
+
+    // Render the sign-in button if its div exists
+    if (googleSigninDiv) {
       google.accounts.id.renderButton(
-        document.getElementById("googleSigninDiv"),
+        googleSigninDiv,
         { theme: "outline", size: "large", width: 250, text: "signin_with" }
       );
-      
-      if (document.getElementById("googleSignupDiv")) {
-        google.accounts.id.renderButton(
-          document.getElementById("googleSignupDiv"),
-          { theme: "outline", size: "large", width: 250, text: "signup_with" }
-        );
-      }
-    } else {
-      console.error("Google Identity Services not loaded properly");
     }
+
+    // Render the sign-up button if its div exists
+    if (googleSignupDiv) {
+      google.accounts.id.renderButton(
+        googleSignupDiv,
+        { theme: "outline", size: "large", width: 250, text: "signup_with" }
+      );
+    }
+  } else if (!(
+    google && google.accounts && google.accounts.id
+  )) {
+    console.error("Google Identity Services not loaded properly or elements not found.");
   }
   
-  // Check if user is already signed in
+  // Check if user is already signed in (this remains page-independent)
   checkAuthStatus();
 }
 
