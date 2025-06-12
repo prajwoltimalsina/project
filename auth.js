@@ -147,7 +147,7 @@ function updateSigninStatus(isSignedIn) {
     
     // Check if we should redirect to dashboard
     if (isOnLoginPage()) {
-      window.location.href = 'dashboard.html';
+      window.location.href = getBasePath() + 'dashboard.html';
     }
   } else {
     handleSignOut();
@@ -156,7 +156,12 @@ function updateSigninStatus(isSignedIn) {
 
 // Helper function to get base path
 function getBasePath() {
-  return '/project/';
+  // Check if we're running on GitHub Pages
+  if (window.location.hostname.includes('github.io')) {
+    return '/project/';
+  }
+  // For local development, return root path
+  return '/';
 }
 
 // Helper function to check if we're on the login page
@@ -164,7 +169,8 @@ function isOnLoginPage() {
   const path = window.location.pathname;
   return path.endsWith('index.html') || 
          path.endsWith('/') || 
-         path.endsWith('/project/');
+         path.endsWith('/project/') ||
+         path.endsWith('/project/index.html');
 }
 
 // Helper function to check if we're on a protected page

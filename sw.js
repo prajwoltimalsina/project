@@ -34,22 +34,21 @@ workbox.routing.registerRoute(
 // Service Worker Version
 const CACHE_NAME = 'campaign-manager-v1';
 
-// Base path for GitHub Pages
-const BASE_PATH = '/project/';
-
-// Files to cache
+// Files to cache (relative to the service worker's scope - which is the root for local dev)
 const urlsToCache = [
-  BASE_PATH,
-  BASE_PATH + 'index.html',
-  BASE_PATH + 'dashboard.html',
-  BASE_PATH + 'overview.html',
-  BASE_PATH + 'auth.js',
-  BASE_PATH + 'script.js',
-  BASE_PATH + 'style.css'
+  '/',
+  '/index.html',
+  '/dashboard.html',
+  '/analytics.html',
+  '/auth.js',
+  '/script.js',
+  '/style.css',
+  '/campaignData.js'
 ];
 
 // Install event
 self.addEventListener('install', event => {
+  self.skipWaiting(); // Force the new service worker to activate immediately
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -75,6 +74,7 @@ self.addEventListener('fetch', event => {
 
 // Activate event
 self.addEventListener('activate', event => {
+  self.clients.claim(); // Take control of all clients immediately
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {

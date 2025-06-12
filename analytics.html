@@ -141,6 +141,20 @@
     <script src="campaignData.js"></script>
 
     <script>
+      // Service Worker Registration
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          // Always use the root path for local development with Live Server
+          // For GitHub Pages, this should be handled by a base path or build step
+          const swPath = "/sw.js"; 
+            
+          navigator.serviceWorker
+            .register(swPath)
+            .then((reg) => console.log("Service Worker registered"))
+            .catch((err) => console.log("SW registration failed: ", err));
+        });
+      }
+
       // Status indicator for online/offline
       const networkStatus = document.getElementById("networkStatus");
 

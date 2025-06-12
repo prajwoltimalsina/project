@@ -23,6 +23,29 @@
 
     <!-- Papa Parse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          const basePath = "/project/";
+          navigator.serviceWorker
+            .register(basePath + "sw.js")
+            .then((reg) => console.log("Service Worker registered"))
+            .catch((err) => console.log("SW registration failed: ", err));
+        });
+      }
+
+      // Initialize Google API when the page loads
+      window.onload = function () {
+        if (typeof gapi !== "undefined") {
+          gapiLoaded();
+        }
+        if (typeof google !== "undefined" && google.accounts) {
+          gisLoaded();
+        }
+      };
+    </script>
   </head>
   <body>
     <!-- Alert Box for messages -->
